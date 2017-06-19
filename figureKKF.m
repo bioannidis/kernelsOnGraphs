@@ -41,9 +41,9 @@ defaultFigureIndex = 2018;
 niter =1;
 
 %% figure 3
-
-defaultFigureIndex = 2019;
-niter =10;
+% 
+% defaultFigureIndex = 2019;
+% niter =10;
 
 %% figure 4
 
