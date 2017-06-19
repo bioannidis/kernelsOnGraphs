@@ -1,0 +1,6 @@
+regularization parameter mu=0.0005
+ diffusion parameter sigma=0.0005
+ reguralized laplacian parameter sigma=1e-10
+ # clusters=6
+ # epsilon=1
+ # s_SNR=10

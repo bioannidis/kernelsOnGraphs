@@ -1,0 +1,12 @@
+regularization parameter mu=0.001
+regularization parameter mu=0.0001
+regularization parameter mu=1e-05
+ diffusion parameter sigma=5
+ diffusion parameter sigma=6
+ diffusion parameter sigma=7
+weight of diagonal scaling =0.0001
+weight of diagonal scaling =0.001
+weight of diagonal scaling =0.1
+weight of diagonal scaling =100000
+weight of diagonal scaling =1e+06
+sampling size =0.4

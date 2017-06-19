@@ -1,0 +1,5 @@
+Erdos-Renyi random graph, 
+Edge prob. = 0.25, 100 vertices, 
+Bandlimited signal, distribution = uniform, 
+Uniform sampler, S = 40, SNR = 20 dB, 
+Multi-kernel, RKHS superposition, 

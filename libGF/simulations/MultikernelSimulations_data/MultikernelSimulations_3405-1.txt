@@ -1,0 +1,5 @@
+Erdos-Renyi random graph, 
+Edge prob. = 0.25, 100 vertices, 
+Bandlimited signal, B = 20, 
+distribution = normal, Uniform sampler, 
+SNR = 10 dB, 5 kernels

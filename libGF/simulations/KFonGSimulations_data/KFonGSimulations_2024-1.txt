@@ -1,0 +1,23 @@
+regularization parameter mu=1e-07
+ diffusion parameter sigma=0.5
+ diffusion parameter sigma=1
+ diffusion parameter sigma=1.5
+weight of diagonal scaling =0.001
+weight of diagonal scaling =0.01
+weight of diagonal scaling =0.1
+weight of diagonal scaling =1
+weight of diagonal scaling =10
+weight of diagonal scaling =100
+weight of diagonal scaling =1000
+weight of diagonal scaling =10000
+weight of diagonal scaling =50000
+weight of diagonal scaling =100000
+weight of diagonal scaling =500000
+weight of diagonal scaling =1e+06
+weight of diagonal scaling =5e+06
+weight of diagonal scaling =1e+07
+weight of diagonal scaling =5e+07
+sampling size =0.4
+time samples =100
+hours per sample =8
+sampling scheme : uniformly random at each t

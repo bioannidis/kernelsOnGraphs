@@ -1,0 +1,9 @@
+regularization parameter mu=1e-06
+ diffusion parameter sigma=3.4
+weight of diagonal scaling =0
+weight of diagonal scaling =0.001
+weight of diagonal scaling =0.01
+weight of diagonal scaling =0.1
+weight of diagonal scaling =1
+weight of diagonal scaling =10
+weight of diagonal scaling =100

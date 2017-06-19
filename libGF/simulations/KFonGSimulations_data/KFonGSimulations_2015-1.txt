@@ -1,0 +1,4 @@
+NMSE vs sampling size Temperature
+regularization parameter mu=1e-07
+ diffusion parameter sigma=1.2
+weight of diagonal scaling =10

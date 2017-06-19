@@ -1,0 +1,5 @@
+regularization parameter mu=1e-05
+ diffusion parameter sigma=0.0005
+ # clusters=6
+ # epsilon=0.0005
+ # s_SNR=-5

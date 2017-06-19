@@ -1,0 +1,5 @@
+Erdos-Renyi random graph, 
+Edge prob. = 0.25, 100 vertices, 
+Exp. decaying signal, B = 20, 
+Uniform sampler, SNR = 10 dB, Multi-kernel, 
+5 kernels, 

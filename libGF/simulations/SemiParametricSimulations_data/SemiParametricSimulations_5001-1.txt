@@ -1,0 +1,2 @@
+regularization parameter mu=1e-05
+ diffusion parameter sigma=1.3

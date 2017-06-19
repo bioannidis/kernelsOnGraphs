@@ -1,0 +1,4 @@
+regularization parameter mu=1e-07
+ diffusion parameter sigma=1.4
+weight of diagonal scaling =0.1
+number of samples =11

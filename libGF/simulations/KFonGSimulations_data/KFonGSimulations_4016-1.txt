@@ -1,0 +1,21 @@
+NMSE vs sampling size Temperature
+regularization parameter mu=1e-07
+ diffusion parameter sigma=6
+weight of diagonal scaling =0.01
+mu for DLSR =1.2
+beta for DLSR =0.5
+step LMS =0.6
+sampling size =1
+sampling size =2
+sampling size =3
+sampling size =4
+sampling size =5
+sampling size =6
+sampling size =7
+sampling size =8
+sampling size =9
+sampling size =10
+sampling size =11
+sampling size =12
+sampling size =13
+sampling size =14

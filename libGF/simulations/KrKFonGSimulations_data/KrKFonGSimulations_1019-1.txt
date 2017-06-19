@@ -1,0 +1,8 @@
+regularization parameter mu=1e-07
+ diffusion parameter sigma=1.9
+weight of diagonal scaling =0.01
+weight of diagonal scaling =0.01
+mu for DLSR =1.4
+beta for DLSR =0.5
+step LMS =0.7
+sampling size =0.3
