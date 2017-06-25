@@ -202,10 +202,11 @@ classdef L2MultiKernelKrigingCovEstimator < MultiKernelKrigingCovEstimator
                 v_thetap=zeros(s_numberOfKernels,1);
                 v_theta=v_thetaInit;
                 s_sens=10^-6;
-                s_stepSize=0.02;
+                s_stepSize=0.001;
                 while norm(v_thetap-v_theta)>s_sens
                     v_thetap=v_theta;
                     v_grad=2*obj.s_lambda*v_theta+2*(m_reducedSizeDictionary')*m_reducedSizeDictionary*v_theta-2*(m_reducedSizeDictionary')*v_residualCovariance;
+                    s_stepSize=L2MultiKernelKrigingCovEstimator.armijoStepSizeRule(obj.s_lambda,m_reducedSizeDictionary,v_theta,v_residualCovariance);
                     v_theta=v_theta-s_stepSize*v_grad;
                     v_theta(v_theta<0)=0;
                 end
@@ -227,7 +228,27 @@ classdef L2MultiKernelKrigingCovEstimator < MultiKernelKrigingCovEstimator
             %obj.m_laplacian = graph.getNormalizedLaplacian();
             m_kernel = obj.generateKernelMatrix();
         end
-        
     end
+     methods(Static)
+        function s_step= armijoStepSizeRule(s_lambda,m_reducedSizeDictionary,v_theta,v_residualCovariance)
+            s_sigma=0.25;
+            s_s=1;
+            s_beta=0.5;
+            s_alpha=s_s*s_beta;
+            v_grad=2*s_lambda*v_theta+2*(m_reducedSizeDictionary')*m_reducedSizeDictionary*v_theta-2*(m_reducedSizeDictionary')*v_residualCovariance;
+            v_d=-v_grad;
+            v_thetanew=v_theta+s_alpha*v_d;
+            while L2MultiKernelKrigingCovEstimator.f(s_lambda,m_reducedSizeDictionary,v_theta,v_residualCovariance)...
+                    -L2MultiKernelKrigingCovEstimator.f(s_lambda,m_reducedSizeDictionary,pos(v_thetanew),v_residualCovariance)...
+                    <-s_sigma*s_alpha*v_grad'*v_d
+                s_alpha=s_alpha*s_beta;
+                v_thetanew=v_theta+s_alpha*v_d;
+            end
+            s_step=s_alpha;
+        end
+        function s_val=f(s_lambda,m_reducedSizeDictionary,v_theta,v_residualCovariance)
+           s_val=norm(v_residualCovariance-m_reducedSizeDictionary*v_theta)^2+s_lambda*norm(v_theta)^2;
+        end
+     end
     
 end

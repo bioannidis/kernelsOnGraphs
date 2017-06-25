@@ -29,12 +29,12 @@ chars_per_line = 80;
 
 
 % Execution options (EDIT)
-defaultFigureIndex = 3019;
-niter =1;
+defaultFigureIndex = 1003;
+niter =2;
 %fs = MultikernelSimulations;
 %fs = SemiParametricSimulations;
-fs = KFonGSimulations;
-%fs = KrKFonGSimulations;
+%fs = KFonGSimulations;
+fs = KrKFonGSimulations;
 
 % EXECUTION
 if nargin < 2

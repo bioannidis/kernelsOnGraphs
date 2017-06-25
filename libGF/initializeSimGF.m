@@ -6,7 +6,7 @@ path_libGF = '.';
 addpath([path_libGF '/libGF']);
 addpath([path_libGF '/libGF/graphFunctionEstimators']);
 addpath([path_libGF '/libGF/graphFunctionEstimators/kernels']);
-addpath([path_libGF '/libGF/graphFunctionEstimators/kriging']);
+addpath([path_libGF '/libGF/graphFunctionEstimators/onlinemultikernel']);
 addpath([path_libGF '/libGF/datasets']);
 addpath([path_libGF '/libGF/datasets/EconomicSectorDataset/ExtendedGraphDataset']);
 addpath([path_libGF '/libGF/graphFunctionGenerators']);

@@ -31,7 +31,7 @@ for s_indLoc=1:s_differentLocations
 end
 
 
-%% create adjacency matrix using method from Jordan paper
+%% create adjacency matrix using method from Ioannidis paper
 s_differentLocationsWithFullData=size(m_differentLattitudesLongtitudesWithFullData,1);
 m_distances=zeros(s_differentLocationsWithFullData,s_differentLocationsWithFullData);
 for s_indLoc1=1:s_differentLocationsWithFullData
