@@ -29,8 +29,8 @@ chars_per_line = 80;
 
 
 % Execution options (EDIT)
-defaultFigureIndex = 1003;
-niter =2;
+defaultFigureIndex = 25192;
+niter =1;
 %fs = MultikernelSimulations;
 %fs = SemiParametricSimulations;
 %fs = KFonGSimulations;

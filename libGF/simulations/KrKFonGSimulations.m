@@ -3649,26 +3649,20 @@ classdef KrKFonGSimulations < simFunctionSet
         function F = compute_fig_2519(obj,niter)
             %% 0. define parameters
             % maximum signal instances sampled
-            
+             
+            % maximum signal instances sampled
             s_maximumTime=360;
-            % period of sample we have total 8759 time instances (hours
+            
+            % sample period: we have total 8759 time instances (hours
             % throught a year 8760) so if we want to sample per day we
             % pick period 24 if we want to sample per month average time of
             % hours per month is 720 week 144
             s_samplePeriod=24;
+            
+            % KKrKF parameters
+            %regularization parameter
             s_mu=10^-7;
-            
-            s_sigmaForDiffusion=0.9;
-            s_monteCarloSimulations=niter;
-            s_SNR=Inf;
-            v_samplePercentage=(0.4:0.4:0.4);
-            
-            
-            %v_bandwidthPercentage=[0.01,0.1];
-            
-            s_stepLMS=0.6;
-            s_muDLSR=1.2;
-            s_betaDLSR=0.5;
+            s_sigmaForDiffusion=1.8;
             %Obs model
             s_obsSigma=0.01;
             %Kr KF
@@ -3677,46 +3671,40 @@ classdef KrKFonGSimulations < simFunctionSet
             s_transWeight=0.4;
             %Multikernel
             v_sigmaForDiffusion=[2.1,0.2,0.7,0.8,1,1.1,1.2,1.3,1.6,1.8,1.9,2];
-            
-
             s_numberOfKernels=size(v_sigmaForDiffusion,2);
             s_lambdaForMultiKernels=1;
-            %v_bandwidthPercentage=0.01;
-            %v_sigma=ones(s_maximumTime,1)* sqrt((s_maximumTime)*v_numberOfSamples*s_mu)';
+            
+            s_monteCarloSimulations=niter;
+            s_SNR=Inf; % no noise real data
+            
+            %sample size percentage
+            v_samplePercentage=(0.4:0.4:0.4);
+            % LMS step size
+            s_stepLMS=2;
+            
+            %DLSR parameters
+            s_muDLSR=1.2;
+            s_betaDLSR=0.5;
+            
+            %bandwidth of bandlimited approaches
+            v_bandwidthBL=[5,8];
+            v_bandwidthLMS=[14,18];
+            v_bandwidthDLSR=[5,8];
+           
             
             %% 1. define graph
             tic
-            
-            v_propagationWeight=0.01; % weight of edges between the same node
-            % in consecutive time instances
-            % extend to vector case
-            
-            
-            %loads [m_adjacency,m_temperatureTimeSeries]
-            % the adjacency between the cities and the relevant time
-            % series.
+          
             load('temperatureTimeSeriesData.mat');
-            m_adjacency=m_adjacency/max(max(m_adjacency));  % normalize adjacency  so that the weights
-            m_timeAdjacency=v_propagationWeight*eye(size(m_adjacency));
-            % of m_adjacency  and
-            % v_propagationWeight are similar.
+            m_adjacency=m_adjacency/max(max(m_adjacency));  % normalize adjacency  
             
-            s_numberOfVertices=size(m_adjacency,1);  % size of the graph
-            
+            s_numberOfVertices=size(m_adjacency,1);  % size of the graph          
             v_numberOfSamples=...                              % must extend to support vector cases
                 round(s_numberOfVertices*v_samplePercentage);
-            v_bandwidthBL=[9,10];
-            v_bandwidthLMS=[14,18];
-            v_bandwidthDLSR=[10,12];
-            m_sigma=sqrt((1:s_maximumTime)'*v_numberOfSamples*s_mu)';
+        
             %select a subset of measurements
             s_totalTimeSamples=size(m_temperatureTimeSeries,2);
-            % data normalization
-            v_mean = mean(m_temperatureTimeSeries,2);
-            v_std = std(m_temperatureTimeSeries')';
-            % 			m_temperatureTimeSeries = diag(1./v_std)*(m_temperatureTimeSeries...
-            %                 - v_mean*ones(1,size(m_temperatureTimeSeries,2)));
-            
+         
             
             s_timeSamples= round(s_totalTimeSamples/s_samplePeriod);
             s_maximumTime=min([s_timeSamples,s_maximumTime,s_totalTimeSamples]);
@@ -3739,37 +3727,19 @@ classdef KrKFonGSimulations < simFunctionSet
             % between locations
             t_spaceAdjacencyAtDifferentTimes=...
                 repmat(m_adjacency,[1,1,s_maximumTime]);
-            t_timeAdjacencyAtDifferentTimes=...
-                repmat(m_timeAdjacency,[1,1,s_maximumTime-1]);
-            
-            % 			graphGenerator = ExtendedGraphGenerator('t_spatialAdjacency',...
-            % 				t_spaceAdjacencyAtDifferentTimes,'t_timeAdjacency',t_timeAdjacencyAtDifferentTimes);
-            % 			graphT=graphGenerator.realization;
-            %
+     
             %% 2. choise of Kernel must be positive definite
             % diffusion kernel
             graph=Graph('m_adjacency',m_adjacency);
             
             diffusionGraphKernel=DiffusionGraphKernel('s_sigma',s_sigmaForDiffusion,'m_laplacian',graph.getLaplacian);
             m_diffusionKernel=diffusionGraphKernel.generateKernelMatrix;
-            %check expression again
-%             t_invSpatialDiffusionKernel=KrKFonGSimulations.createinvSpatialKernelSingleDifKer(m_diffusionKernel,m_timeAdjacency,s_maximumTime);
-            
+ 
             %% generate transition, correlation matrices
-            m_sigma0=zeros(s_numberOfVertices); %TODO choose covariance of initial state.
             m_initialState=zeros(s_numberOfVertices,s_monteCarloSimulations); % mean of initial state
             t_initialSigma0=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
-            for s_ind=1:s_monteCarloSimulations
-                t_sigma0(:,:,s_ind)=m_sigma0;
-            end
-            %KKF part
-%             [t_correlations,t_transitions]=KrKFonGSimulations.kernelRegressionRecursion...
-%                 (t_invSpatialDiffusionKernel...
-%                 ,-t_timeAdjacencyAtDifferentTimes...
-%                 ,s_maximumTime,s_numberOfVertices,m_sigma0);
-            % Correlation matrices for KrKF
-            %t_spatialDiffusionKernel=KrKFonGSimulations.createDiffusionKernelsFromTopologies(t_spaceAdjacencyAtDifferentTimes,s_sigmaForDiffusion);
-            %t_spatialCovariance=t_spatialDiffusionKernel;
+          
+
             % Transition matrix for KrKf
             t_transitionKrKF=...
                 repmat(s_transWeight*eye(s_numberOfVertices),[1,1,s_maximumTime]);
@@ -3784,7 +3754,6 @@ classdef KrKFonGSimulations < simFunctionSet
                 m_combinedKernel=m_combinedKernel+v_thetaSpat(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
 
             end
- 
             %initialize stateNoise somehow
             
             %m_stateEvolutionKernel=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
@@ -3800,8 +3769,6 @@ classdef KrKFonGSimulations < simFunctionSet
             
             
             %% 4.0 Estimate signal
-            t_kfEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
-                ,size(v_numberOfSamples,2));
             t_krkfEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
                 ,size(v_numberOfSamples,2));
             t_bandLimitedEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
@@ -3902,9 +3869,8 @@ classdef KrKFonGSimulations < simFunctionSet
                     if mod(s_timeInd,s_trainTimePeriod)==0
                         % recalculate t_stateNoiseCorrelation
                         t_residualSpatCov=KrKFonGSimulations.calculateResidualCov(t_residualSpat,s_numberOfSamples,s_monteCarloSimulations,s_trainTimePeriod);
-                        
                         t_residualStateCov=KrKFonGSimulations.calculateResidualCov(t_residualState,s_numberOfSamples,s_monteCarloSimulations,s_trainTimePeriod);
-
+                     
                         %normalize Cov?
                         tic
                         v_thetaSpat=l2MultiKernelKrigingCovEstimator.estimateCoeffVectorCVX(t_residualSpatCov,m_positionst);
@@ -4133,8 +4099,6 @@ classdef KrKFonGSimulations < simFunctionSet
             F.ylimit=[0 1];
             F.caption=[	sprintf('regularization parameter mu=%g\n',s_mu),...
                 sprintf(' diffusion parameter sigma=%g\n',s_sigmaForDiffusion)...
-                sprintf('weight of diagonal scaling =%g\n',v_propagationWeight)...
-                sprintf('weight of diagonal scaling =%g\n',v_propagationWeight)...
                 sprintf('mu for DLSR =%g\n',s_muDLSR)...
                 sprintf('beta for DLSR =%g\n',s_betaDLSR)...
                 sprintf('step LMS =%g\n',s_stepLMS)...
@@ -4144,82 +4108,70 @@ classdef KrKFonGSimulations < simFunctionSet
         
          % using MLK with frobenious norm betweeen matrices and l2
         function F = compute_fig_25191(obj,niter)
-            %% 0. define parameters
+                %% 0. define parameters
             % maximum signal instances sampled
-            
+             
+            % maximum signal instances sampled
             s_maximumTime=360;
-            % period of sample we have total 8759 time instances (hours
+            
+            % sample period: we have total 8759 time instances (hours
             % throught a year 8760) so if we want to sample per day we
             % pick period 24 if we want to sample per month average time of
             % hours per month is 720 week 144
             s_samplePeriod=24;
+            
+            % KKrKF parameters
+            %regularization parameter
             s_mu=10^-7;
-            
-            s_sigmaForDiffusion=0.9;
-            s_monteCarloSimulations=niter;
-            s_SNR=Inf;
-            v_samplePercentage=(0.4:0.4:0.4);
-            
-            
-            %v_bandwidthPercentage=[0.01,0.1];
-            
-            s_stepLMS=0.6;
-            s_muDLSR=1.2;
-            s_betaDLSR=0.5;
+            s_sigmaForDiffusion=1.8;
             %Obs model
             s_obsSigma=0.01;
             %Kr KF
             s_stateSigma=0.05;
             s_pctOfTrainPhase=0.1;
-            s_trainTime=s_pctOfTrainPhase*s_maximumTime;
             s_transWeight=0.4;
             %Multikernel
             v_sigmaForDiffusion=[2.1,0.2,0.7,0.8,1,1.1,1.2,1.3,1.6,1.8,1.9,2];
-            
-
             s_numberOfKernels=size(v_sigmaForDiffusion,2);
             s_lambdaForMultiKernels=1;
-            %v_bandwidthPercentage=0.01;
-            %v_sigma=ones(s_maximumTime,1)* sqrt((s_maximumTime)*v_numberOfSamples*s_mu)';
+            
+            s_monteCarloSimulations=niter;
+            s_SNR=Inf; % no noise real data
+            
+            %sample size percentage
+            v_samplePercentage=(0.4:0.4:0.4);
+            % LMS step size
+            s_stepLMS=2;
+            
+            %DLSR parameters
+            s_muDLSR=1.2;
+            s_betaDLSR=0.5;
+            
+            %bandwidth of bandlimited approaches
+            v_bandwidthBL=[5,8];
+            v_bandwidthLMS=[14,18];
+            v_bandwidthDLSR=[5,8];
+           
             
             %% 1. define graph
             tic
-            
-            v_propagationWeight=0.01; % weight of edges between the same node
-            % in consecutive time instances
-            % extend to vector case
-            
-            
-            %loads [m_adjacency,m_temperatureTimeSeries]
-            % the adjacency between the cities and the relevant time
-            % series.
+          
             load('temperatureTimeSeriesData.mat');
-            m_adjacency=m_adjacency/max(max(m_adjacency));  % normalize adjacency  so that the weights
-            m_timeAdjacency=v_propagationWeight*eye(size(m_adjacency));
-            % of m_adjacency  and
-            % v_propagationWeight are similar.
+            m_adjacency=m_adjacency/max(max(m_adjacency));  % normalize adjacency  
             
-            s_numberOfVertices=size(m_adjacency,1);  % size of the graph
-            
+            s_numberOfVertices=size(m_adjacency,1);  % size of the graph          
             v_numberOfSamples=...                              % must extend to support vector cases
                 round(s_numberOfVertices*v_samplePercentage);
-            v_bandwidthBL=[9,10];
-            v_bandwidthLMS=[14,18];
-            v_bandwidthDLSR=[10,12];
-            m_sigma=sqrt((1:s_maximumTime)'*v_numberOfSamples*s_mu)';
+        
             %select a subset of measurements
             s_totalTimeSamples=size(m_temperatureTimeSeries,2);
-            % data normalization
-            v_mean = mean(m_temperatureTimeSeries,2);
-            v_std = std(m_temperatureTimeSeries')';
-            % 			m_temperatureTimeSeries = diag(1./v_std)*(m_temperatureTimeSeries...
-            %                 - v_mean*ones(1,size(m_temperatureTimeSeries,2)));
-            
+         
             
             s_timeSamples= round(s_totalTimeSamples/s_samplePeriod);
             s_maximumTime=min([s_timeSamples,s_maximumTime,s_totalTimeSamples]);
             s_trainTimePeriod=round(s_pctOfTrainPhase*s_maximumTime);
-            
+            s_trainTime=round(s_pctOfTrainPhase*s_maximumTime);
+
             
             m_temperatureTimeSeriesSampled=zeros(s_numberOfVertices,s_maximumTime);
             for s_vertInd=1:s_numberOfVertices
@@ -4237,37 +4189,19 @@ classdef KrKFonGSimulations < simFunctionSet
             % between locations
             t_spaceAdjacencyAtDifferentTimes=...
                 repmat(m_adjacency,[1,1,s_maximumTime]);
-            t_timeAdjacencyAtDifferentTimes=...
-                repmat(m_timeAdjacency,[1,1,s_maximumTime-1]);
-            
-            % 			graphGenerator = ExtendedGraphGenerator('t_spatialAdjacency',...
-            % 				t_spaceAdjacencyAtDifferentTimes,'t_timeAdjacency',t_timeAdjacencyAtDifferentTimes);
-            % 			graphT=graphGenerator.realization;
-            %
+     
             %% 2. choise of Kernel must be positive definite
             % diffusion kernel
             graph=Graph('m_adjacency',m_adjacency);
             
             diffusionGraphKernel=DiffusionGraphKernel('s_sigma',s_sigmaForDiffusion,'m_laplacian',graph.getLaplacian);
             m_diffusionKernel=diffusionGraphKernel.generateKernelMatrix;
-            %check expression again
-%             t_invSpatialDiffusionKernel=KrKFonGSimulations.createinvSpatialKernelSingleDifKer(m_diffusionKernel,m_timeAdjacency,s_maximumTime);
-            
+ 
             %% generate transition, correlation matrices
-            m_sigma0=zeros(s_numberOfVertices); %TODO choose covariance of initial state.
             m_initialState=zeros(s_numberOfVertices,s_monteCarloSimulations); % mean of initial state
             t_initialSigma0=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
-            for s_ind=1:s_monteCarloSimulations
-                t_sigma0(:,:,s_ind)=m_sigma0;
-            end
-            %KKF part
-%             [t_correlations,t_transitions]=KrKFonGSimulations.kernelRegressionRecursion...
-%                 (t_invSpatialDiffusionKernel...
-%                 ,-t_timeAdjacencyAtDifferentTimes...
-%                 ,s_maximumTime,s_numberOfVertices,m_sigma0);
-            % Correlation matrices for KrKF
-            %t_spatialDiffusionKernel=KrKFonGSimulations.createDiffusionKernelsFromTopologies(t_spaceAdjacencyAtDifferentTimes,s_sigmaForDiffusion);
-            %t_spatialCovariance=t_spatialDiffusionKernel;
+          
+
             % Transition matrix for KrKf
             t_transitionKrKF=...
                 repmat(s_transWeight*eye(s_numberOfVertices),[1,1,s_maximumTime]);
@@ -4662,8 +4596,503 @@ classdef KrKFonGSimulations < simFunctionSet
             F.ylimit=[0 1];
             F.caption=[	sprintf('regularization parameter mu=%g\n',s_mu),...
                 sprintf(' diffusion parameter sigma=%g\n',s_sigmaForDiffusion)...
-                sprintf('weight of diagonal scaling =%g\n',v_propagationWeight)...
-                sprintf('weight of diagonal scaling =%g\n',v_propagationWeight)...
+                sprintf('mu for DLSR =%g\n',s_muDLSR)...
+                sprintf('beta for DLSR =%g\n',s_betaDLSR)...
+                sprintf('step LMS =%g\n',s_stepLMS)...
+                sprintf('sampling size =%g\n',v_samplePercentage)];
+            
+        end
+        
+          % using MLK with mininization of trace betweeen matrices and l2
+        function F = compute_fig_25192(obj,niter)
+                %% 0. define parameters
+            % maximum signal instances sampled
+             
+            % maximum signal instances sampled
+            s_maximumTime=360;
+            
+            % sample period: we have total 8759 time instances (hours
+            % throught a year 8760) so if we want to sample per day we
+            % pick period 24 if we want to sample per month average time of
+            % hours per month is 720 week 144
+            s_samplePeriod=24;
+            
+            % KKrKF parameters
+            %regularization parameter
+            s_mu=10^-7;
+            s_sigmaForDiffusion=1.8;
+            %Obs model
+            s_obsSigma=0.01;
+            %Kr KF
+            s_stateSigma=0.05;
+            s_pctOfTrainPhase=0.30;
+            s_transWeight=0.004;
+            %Multikernel
+            v_sigmaForDiffusion=[2.5,2.1,0.2,0.7,0.8,1,1.1,1.2,1.3,1.6,1.8,1.9,2];
+            s_mean=1;
+            s_std=2;
+            v_sigmaForDiffusion= abs(s_mean+ s_std.*randn(100,1)');
+            s_numberOfKernels=size(v_sigmaForDiffusion,2);
+            s_lambdaForMultiKernels=10^-8;
+            
+            s_monteCarloSimulations=niter;
+            s_SNR=Inf; % no noise real data
+            
+            %sample size percentage
+            v_samplePercentage=(0.4:0.4:0.4);
+            % LMS step size
+            s_stepLMS=2;
+            
+            %DLSR parameters
+            s_muDLSR=1.2;
+            s_betaDLSR=0.5;
+            
+            %bandwidth of bandlimited approaches
+            v_bandwidthBL=[5,8];
+            v_bandwidthLMS=[14,18];
+            v_bandwidthDLSR=[5,8];
+           
+            
+            %% 1. define graph
+            tic
+          
+            load('temperatureTimeSeriesData.mat');
+            m_adjacency=m_adjacency/max(max(m_adjacency));  % normalize adjacency  
+            
+            s_numberOfVertices=size(m_adjacency,1);  % size of the graph          
+            v_numberOfSamples=...                              % must extend to support vector cases
+                round(s_numberOfVertices*v_samplePercentage);
+        
+            %select a subset of measurements
+            s_totalTimeSamples=size(m_temperatureTimeSeries,2);
+         
+            
+            s_timeSamples= round(s_totalTimeSamples/s_samplePeriod);
+            s_maximumTime=min([s_timeSamples,s_maximumTime,s_totalTimeSamples]);
+            s_trainTimePeriod=round(s_pctOfTrainPhase*s_maximumTime);
+            s_trainTime=round(s_pctOfTrainPhase*s_maximumTime);
+
+            
+            m_temperatureTimeSeriesSampled=zeros(s_numberOfVertices,s_maximumTime);
+            for s_vertInd=1:s_numberOfVertices
+                v_temperatureTimeSeries=m_temperatureTimeSeries(s_vertInd,:);
+                v_temperatureTimeSeriesSampledWhole=...
+                    v_temperatureTimeSeries(1:s_samplePeriod:s_totalTimeSamples);
+                m_temperatureTimeSeriesSampled(s_vertInd,:)=...
+                    v_temperatureTimeSeriesSampledWhole(1:s_maximumTime);
+            end
+            m_temperatureTimeSeriesSampled=m_temperatureTimeSeriesSampled(:,1:s_maximumTime);
+            
+            
+            
+            % define adjacency in the space and in the time at each time
+            % between locations
+            t_spaceAdjacencyAtDifferentTimes=...
+                repmat(m_adjacency,[1,1,s_maximumTime]);
+     
+            %% 2. choise of Kernel must be positive definite
+            % diffusion kernel
+            graph=Graph('m_adjacency',m_adjacency);
+            
+            diffusionGraphKernel=DiffusionGraphKernel('s_sigma',s_sigmaForDiffusion,'m_laplacian',graph.getLaplacian);
+            m_diffusionKernel=diffusionGraphKernel.generateKernelMatrix;
+ 
+            %% generate transition, correlation matrices
+            m_initialState=zeros(s_numberOfVertices,s_monteCarloSimulations); % mean of initial state
+            t_initialSigma0=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
+          
+
+            % Transition matrix for KrKf
+            t_transitionKrKF=...
+                repmat(s_transWeight*eye(s_numberOfVertices),[1,1,s_maximumTime]);
+            % Kernels for KrKF
+            t_dictionaryOfKernels=zeros(s_numberOfKernels,s_numberOfVertices,s_numberOfVertices);
+            t_dictionaryOfEigenValues=zeros(s_numberOfKernels,s_numberOfVertices,s_numberOfVertices);
+            v_thetaSpat=ones(s_numberOfKernels,1);
+            m_combinedKernel=zeros(s_numberOfVertices,s_numberOfVertices);
+            [m_eigenvectorsAll,m_eigenvaluesAll]=KrKFonGSimulations.transformedDifEigValues(graph.getLaplacian,v_sigmaForDiffusion);
+            for s_kernelInd=1:s_numberOfKernels
+                diffusionGraphKernel=DiffusionGraphKernel('s_sigma',v_sigmaForDiffusion(s_kernelInd),'m_laplacian',graph.getLaplacian);
+                m_difker=diffusionGraphKernel.generateKernelMatrix;
+                t_dictionaryOfKernels(s_kernelInd,:,:)=m_difker;
+                m_combinedKernel=m_combinedKernel+v_thetaSpat(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
+                t_dictionaryOfEigenValues(s_kernelInd,:,:)=diag(m_eigenvaluesAll(:,s_kernelInd));
+            end
+
+         
+            
+            m_stateEvolutionKernel=s_stateSigma^2*eye(s_numberOfVertices);
+            %m_stateEvolutionKernel=repmat(m_stateEvolutionKernel,[1,1,s_maximumTime]);
+            
+            %% 3. generate true signal
+            
+            m_graphFunction=reshape(m_temperatureTimeSeriesSampled,[s_maximumTime*s_numberOfVertices,1]);
+            
+            m_graphFunction=repmat(m_graphFunction,1,s_monteCarloSimulations);
+            
+            
+            %% 4.0 Estimate signal
+            t_kfEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2));
+            t_krkfEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2));
+            t_bandLimitedEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2),size(v_bandwidthBL,2));
+            t_distrEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2),size(v_bandwidthBL,2));         
+            t_lmsEstimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2),size(v_bandwidthBL,2));
+            t_kRRestimate=zeros(s_numberOfVertices*s_maximumTime,s_monteCarloSimulations...
+                ,size(v_numberOfSamples,2));
+            
+            
+            for s_sampleInd=1:size(v_numberOfSamples,2)
+                %% 4. generate observations
+                s_numberOfSamples=v_numberOfSamples(s_sampleInd);
+                m_obsNoiseCovariance=s_obsSigma^2*eye(s_numberOfSamples);
+                t_obsNoiseCovariace=repmat(m_obsNoiseCovariance,[1,1,s_maximumTime]);
+                sampler = UniformGraphFunctionSampler('s_numberOfSamples',s_numberOfSamples,'s_SNR',s_SNR);
+                m_samples=zeros(s_numberOfSamples*s_maximumTime,s_monteCarloSimulations);
+                m_positions=zeros(s_numberOfSamples*s_maximumTime,s_monteCarloSimulations);
+                %Same sample locations needed for distributed algo
+                [m_samples(1:s_numberOfSamples,:),...
+                    m_positions(1:s_numberOfSamples,:)]...
+                    = sampler.sample(m_graphFunction(1:s_numberOfVertices,:));
+                for s_timeInd=2:s_maximumTime
+                    %time t indices
+                    v_timetIndicesForSignals=(s_timeInd-1)*s_numberOfVertices+1:...
+                        (s_timeInd)*s_numberOfVertices;
+                    v_timetIndicesForSamples=(s_timeInd-1)*s_numberOfSamples+1:...
+                        (s_timeInd)*s_numberOfSamples;
+                    m_positions(v_timetIndicesForSamples,:)=m_positions(1:s_numberOfSamples,:);
+                    for s_mtId=1:s_monteCarloSimulations
+                        m_samples(v_timetIndicesForSamples,s_mtId)=m_graphFunction...
+                            ((s_timeInd-1)*s_numberOfVertices+...
+                            m_positions(v_timetIndicesForSamples,s_mtId));
+                    end
+                    
+                end
+                %% 4.5 KrKF estimate
+                krigedKFonGFunctionEstimator=KrigedKFonGFunctionEstimator('s_maximumTime',s_maximumTime,...
+                    't_previousMinimumSquaredError',t_initialSigma0,...
+                    'm_previousEstimate',m_initialState);
+                l2MultiKernelKrigingCorEstimator=L2MultiKernelKrigingCorEstimator...
+                    ('t_kernelDictionary',t_dictionaryOfKernels,'s_lambda',s_lambdaForMultiKernels,'s_obsNoiseVar',s_obsSigma^2);
+                 l2MultiKernelKrigingCorEstimatorEig=L2MultiKernelKrigingCorEstimator...
+                    ('t_kernelDictionary',t_dictionaryOfEigenValues,'s_lambda',s_lambdaForMultiKernels,'s_obsNoiseVar',s_obsSigma^2);
+                 l1MultiKernelKrigingCorEstimator=L1MultiKernelKrigingCorEstimator...
+                    ('t_kernelDictionary',t_dictionaryOfKernels,'s_lambda',s_lambdaForMultiKernels,'s_obsNoiseVar',s_obsSigma^2);
+                batchEmpiricalMeanCovEstimator=BatchEmpiricalMeanCovEstimator;
+                % used for parameter estimation
+                s_auxInd=0;
+                t_approximSpat=zeros(s_numberOfVertices,s_monteCarloSimulations,s_trainTimePeriod);
+                t_residualState=zeros(s_numberOfVertices,s_monteCarloSimulations,s_trainTimePeriod);
+                for s_timeInd=1:s_maximumTime
+                    %time t indices
+                    v_timetIndicesForSignals=(s_timeInd-1)*s_numberOfVertices+1:...
+                        (s_timeInd)*s_numberOfVertices;
+                    v_timetIndicesForSamples=(s_timeInd-1)*s_numberOfSamples+1:...
+                        (s_timeInd)*s_numberOfSamples;
+                    %m_spatialCovariance=t_spatialCovariance(:,:,s_timeInd);
+                    m_spatialCovariance=m_combinedKernel;
+                    m_obsNoiseCovariace=t_obsNoiseCovariace(:,:,s_timeInd);
+                    
+                    %samples and positions at time t
+                    m_samplest=m_samples(v_timetIndicesForSamples,:);
+                    m_positionst=m_positions(v_timetIndicesForSamples,:);
+                    %estimate
+                    [m_estimateKR,m_estimateKF,t_MSEKF]=krigedKFonGFunctionEstimator.estimate...
+                        (m_samplest,m_positionst,squeeze(t_transitionKrKF(:,:,s_timeInd)),m_stateEvolutionKernel,m_spatialCovariance,m_obsNoiseCovariace);
+                    
+                    
+                    
+                    %prepare kf for next iter
+                    
+                    t_krkfEstimate(v_timetIndicesForSignals,:,s_sampleInd)=...
+                        m_estimateKR+m_estimateKF;
+                    
+                    krigedKFonGFunctionEstimator.t_previousMinimumSquaredError=t_MSEKF;
+                    krigedKFonGFunctionEstimator.m_previousEstimate=m_estimateKF;
+                    %% Multikernel
+                    if s_trainTime>s_timeInd>1
+                        s_auxInd=s_auxInd+1;
+                        % save approximate matrix
+                         t_approximSpat(:,:,s_auxInd)=m_estimateKR;
+                            t_residualState(:,:,s_auxInd)=m_estimateKF...
+                            -t_transitionKrKF(:,:,s_timeInd)*m_estimateKFPrev;
+
+                    end
+                    if s_timeInd==s_trainTime
+                        %calculate exact theta estimate
+                        t_approxSpatCor=batchEmpiricalMeanCovEstimator.calculateResidualCorBatch(t_approximSpat,s_numberOfVertices,s_monteCarloSimulations,s_trainTimePeriod);
+                        t_approxStateCor=batchEmpiricalMeanCovEstimator.calculateResidualCorBatch(t_residualState,s_numberOfVertices,s_monteCarloSimulations,s_trainTimePeriod);
+                        for s_monteCarloInd=1:s_monteCarloSimulations
+                            t_transformedSpatCor(:,:,s_monteCarloInd)=m_eigenvectorsAll'*t_approxSpatCor(:,:,s_monteCarloInd)*m_eigenvectorsAll;
+                            t_transformedStateCor(:,:,s_monteCarloInd)=m_eigenvectorsAll'*t_approxStateCor(:,:,s_monteCarloInd)*m_eigenvectorsAll;
+                        end
+                        
+                        tic
+                        v_thetaSpat=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorCVX(t_approxSpatCor);
+                        v_thetaSpatl2eig=l2MultiKernelKrigingCorEstimatorEig.estimateCoeffVectorCVX(t_transformedSpatCor);
+                        %v_thetaSpat=l1MultiKernelKrigingCorEstimator.estimateCoeffVectorCVX(t_approxSpatCor);
+                        %v_thetaSpat=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorGD(t_transformedSpatCor,m_eigenvaluesAll);
+                        %v_thetaSpat=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorNewton(t_transformedSpatCor,m_eigenvaluesAll);
+                        %v_theta=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorGDWithInit(t_transformedSpatCor,m_eigenvaluesAll,v_thetaSpat);
+                        v_thetaState=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorCVX(t_approxStateCor);
+                        timeCVX=toc
+%                         tic
+%                         v_thetaSpat=l2MultiKernelKrigingCovEstimator.estimateCoeffVectorGD(t_residualSpatCov,m_positionst);
+%                         v_thetaState=l2MultiKernelKrigingCovEstimator.estimateCoeffVectorGD(t_residualStateCov,m_positionst);
+%                         timeGD=toc
+                        m_combinedKernel=zeros(s_numberOfVertices);
+                        for s_kernelInd=1:s_numberOfKernels
+                            m_combinedKernel=m_combinedKernel+v_thetaSpat(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
+                        end
+                        m_stateEvolutionKernel=zeros(s_numberOfVertices);
+                        for s_kernelInd=1:s_numberOfKernels
+                            m_stateEvolutionKernel=m_stateEvolutionKernel+v_thetaState(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
+                        end
+                        m_stateEvolutionKernel=s_stateSigma^2*m_stateEvolutionKernel;
+                        s_auxInd=0;
+                        t_approximSpat=zeros(s_numberOfSamples,s_monteCarloSimulations);
+                        t_residualState=zeros(s_numberOfSamples,s_monteCarloSimulations);
+                    end
+%                     if s_timeInd>s_trainTime
+%                         do a few gradient descent steps
+%                         combine using formula
+%                         
+%                         t_residualSpatCovRankOne=KrKFonGSimulations.calculateResidualCov(t_residualSpat,s_numberOfSamples,s_monteCarloSimulations,1);
+%                         
+%                         [t_approxSpatCor,m_residualSpatMean]=KrKFonGSimulations.incrementalCalcResCovMean...
+%                             (t_approxSpatCor,t_approximSpat,s_timeInd,m_residualSpatMean);
+%                         
+%                         t_residualStateCovRankOne=KrKFonGSimulations.calculateResidualCov(t_residualState,s_numberOfSamples,s_monteCarloSimulations,1);
+%                         [t_approxStateCor,m_residualStateMean]=KrKFonGSimulations.incrementalCalcResCovMean...
+%                             (t_approxStateCor,t_residualState,s_timeInd,m_residualStateMean);
+%                         tic
+%                         v_thetaSpat=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorGDWithInit(t_approxSpatCor,m_positionst,v_thetaSpat);
+%                         v_thetaState=l2MultiKernelKrigingCorEstimator.estimateCoeffVectorGDWithInit(t_approxStateCor,m_positionst,v_thetaState);
+%                         timeGD=toc
+%                         s_timeInd
+%                         m_combinedKernel=zeros(s_numberOfVertices);
+%                         for s_kernelInd=1:s_numberOfKernels
+%                             m_combinedKernel=m_combinedKernel+v_thetaSpat(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
+%                         end
+%                         m_stateEvolutionKernel=zeros(s_numberOfVertices);
+%                         for s_kernelInd=1:s_numberOfKernels
+%                             m_stateEvolutionKernel=m_stateEvolutionKernel+v_thetaState(s_kernelInd)*squeeze(t_dictionaryOfKernels(s_kernelInd,:,:));
+%                         end
+%                         s_auxInd=0;
+%                     end
+                    
+                    
+                    m_estimateKFPrev=m_estimateKF;
+                    t_MSEKFPRev=t_MSEKF;
+                    m_estimateKRPrev=m_estimateKR;
+
+                end
+
+                % 6. Kernel Ridge Regression
+                
+                nonParametricGraphFunctionEstimator=NonParametricGraphFunctionEstimator...
+                    ('m_kernels',m_diffusionKernel,'s_lambda',s_mu);
+                for s_timeInd=1:s_maximumTime
+                    %time t indices
+                    v_timetIndicesForSignals=(s_timeInd-1)*s_numberOfVertices+1:...
+                        (s_timeInd)*s_numberOfVertices;
+                    v_timetIndicesForSamples=(s_timeInd-1)*s_numberOfSamples+1:...
+                        (s_timeInd)*s_numberOfSamples;
+                    
+                    %samples and positions at time t
+                    m_samplest=m_samples(v_timetIndicesForSamples,:);
+                    m_positionst=m_positions(v_timetIndicesForSamples,:);
+                    %estimate
+                    
+                    [t_kRRestimate(v_timetIndicesForSignals,:,s_sampleInd)]=...
+                        nonParametricGraphFunctionEstimator.estimate...
+                        (m_samplest,m_positionst,s_mu);
+                    
+                end
+                %% 7. bandlimited estimate                
+                
+                
+                for s_bandInd=1:size(v_bandwidthBL,2)
+                    s_bandwidth=v_bandwidthBL(s_bandInd);
+                    for s_timeInd=1:s_maximumTime
+                        %time t indices
+                        v_timetIndicesForSignals=(s_timeInd-1)*s_numberOfVertices+1:...
+                            (s_timeInd)*s_numberOfVertices;
+                        v_timetIndicesForSamples=(s_timeInd-1)*s_numberOfSamples+1:...
+                            (s_timeInd)*s_numberOfSamples;
+                        
+                        %samples and positions at time t
+                        
+                        m_samplest=m_samples(v_timetIndicesForSamples,:);
+                        m_positionst=m_positions(v_timetIndicesForSamples,:);
+                        %create take diagonals from extended graph
+                        m_adjacency=t_spaceAdjacencyAtDifferentTimes(:,:,s_timeInd);
+                        grapht=Graph('m_adjacency',m_adjacency);
+                        
+                        %bandlimited estimate
+                        bandlimitedGraphFunctionEstimator= ...
+                            BandlimitedGraphFunctionEstimator('m_laplacian'...
+                            ,grapht.getLaplacian,'s_bandwidth',s_bandwidth);
+                        t_bandLimitedEstimate(v_timetIndicesForSignals,:,s_sampleInd,s_bandInd)=...
+                            bandlimitedGraphFunctionEstimator.estimate(m_samplest,m_positionst);
+                        
+                    end
+                    
+                    
+                end
+                
+                %% 8.DistributedFullTrackingAlgorithmEstimator
+                %%method from paper A distrubted Tracking Algorithm for Recostruction of Graph Signals
+                %%authors Xiaohan Wang, Mengdi Wang, Yuantao Gu
+                
+                
+                for s_bandInd=1:size(v_bandwidthDLSR,2)
+                    s_bandwidth=v_bandwidthDLSR(s_bandInd);
+                    distributedFullTrackingAlgorithmEstimator=...
+                        DistributedFullTrackingAlgorithmEstimator('s_maximumTime',s_maximumTime,...
+                        's_bandwidth',s_bandwidth,'graph',graph);
+                    t_distrEstimate(:,:,s_sampleInd,s_bandInd)=...
+                        distributedFullTrackingAlgorithmEstimator.estimate(m_samples,m_positions);
+                    
+                    
+                end
+                %% . LMS
+                for s_bandInd=1:size(v_bandwidthLMS,2)
+                    s_bandwidth=v_bandwidthLMS(s_bandInd);
+                    m_adjacency=t_spaceAdjacencyAtDifferentTimes(:,:,s_timeInd);
+                    grapht=Graph('m_adjacency',m_adjacency);
+                    lMSFullTrackingAlgorithmEstimator=...
+                        LMSFullTrackingAlgorithmEstimator('s_maximumTime',s_maximumTime,...
+                        's_bandwidth',s_bandwidth,'graph',grapht,'s_stepLMS',s_stepLMS);
+                    t_lmsEstimate(:,:,s_sampleInd,s_bandInd)=...
+                        lMSFullTrackingAlgorithmEstimator.estimate(m_samples,m_positions,m_graphFunction);
+                    
+                    
+                end
+            end
+            
+            
+            %% 9. measure difference
+            
+            m_relativeErrorDistr=zeros(s_maximumTime,size(v_numberOfSamples,2)*size(v_bandwidthDLSR,2));
+            m_relativeErrorKf=zeros(s_maximumTime,size(v_numberOfSamples,2));
+            m_relativeErrorKrKF=zeros(s_maximumTime,size(v_numberOfSamples,2));
+            
+            m_relativeErrorKRR=zeros(s_maximumTime,size(v_numberOfSamples,2));
+            
+            m_relativeErrorLms=zeros(s_maximumTime,size(v_numberOfSamples,2)*size(v_bandwidthLMS,2));
+            
+            m_relativeErrorbandLimitedEstimate=zeros(s_maximumTime,size(v_numberOfSamples,2)*size(v_bandwidthBL,2));
+            v_allPositions=(1:s_numberOfVertices)';
+            for s_sampleInd=1:size(v_numberOfSamples,2)
+                v_normOfKFErrors=zeros(s_maximumTime,1);
+                v_normOfKrKFErrors=zeros(s_maximumTime,1);
+                v_normOfNotSampled=zeros(s_maximumTime,1);
+                v_normOfKrrErrors=zeros(s_maximumTime,1);
+                m_normOfBLErrors=zeros(s_maximumTime,size(v_bandwidthBL,2));
+                m_normOfDLSRErrors=zeros(s_maximumTime,size(v_bandwidthDLSR,2));
+                m_normOfLMSErrors=zeros(s_maximumTime,size(v_bandwidthLMS,2));
+                for s_timeInd=1:s_maximumTime
+                    %from the begining up to now
+                    v_timetIndicesForSignals=1:...
+                        (s_timeInd)*s_numberOfVertices;
+                    v_timetIndicesForSamples=(s_timeInd-1)*s_numberOfSamples+1:...
+                        (s_timeInd)*s_numberOfSamples;
+                    
+                    m_samplest=m_samples(v_timetIndicesForSamples,:);
+                    m_positionst=m_positions(v_timetIndicesForSamples,:);
+                    %this vector should be added to the positions of the sa
+                    
+                    
+                    for s_mtind=1:s_monteCarloSimulations
+                        v_notSampledPositions=setdiff(v_allPositions,m_positionst(:,s_mtind));
+                        v_normOfKFErrors(s_timeInd)=v_normOfKFErrors(s_timeInd)+...
+                            norm(t_kfEstimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                            ,s_mtind,s_sampleInd)...
+                            -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                        v_normOfKrKFErrors(s_timeInd)=v_normOfKrKFErrors(s_timeInd)+...
+                            norm(t_krkfEstimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                            ,s_mtind,s_sampleInd)...
+                            -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                        v_normOfKrrErrors(s_timeInd)=v_normOfKrrErrors(s_timeInd)+...
+                            norm(t_kRRestimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                            ,s_mtind,s_sampleInd)...
+                            -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                        v_normOfNotSampled(s_timeInd)=v_normOfNotSampled(s_timeInd)+...
+                            norm(m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                    end
+                    
+                    s_summedNorm=sum(v_normOfNotSampled(1:s_timeInd));
+                    m_relativeErrorKf(s_timeInd, s_sampleInd)...
+                        =sum(v_normOfKFErrors(1:s_timeInd))/...
+                        s_summedNorm;%s_timeInd*s_numberOfVertices;
+                    m_relativeErrorKrKF(s_timeInd, s_sampleInd)...
+                        =sum(v_normOfKrKFErrors(1:s_timeInd))/...
+                        s_summedNorm;%s_timeInd*s_numberOfVertices;
+                    m_relativeErrorKRR(s_timeInd, s_sampleInd)...
+                        =sum(v_normOfKrrErrors(1:s_timeInd))/...
+                        s_summedNorm;%s_timeInd*s_numberOfVertices;
+                    for s_bandInd=1:size(v_bandwidthBL,2)
+                        
+                        for s_mtind=1:s_monteCarloSimulations
+                            m_normOfBLErrors(s_timeInd,s_bandInd)=m_normOfBLErrors(s_timeInd,s_bandInd)+...
+                                norm(t_bandLimitedEstimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                                ,s_mtind,s_sampleInd,s_bandInd)...
+                                -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                            m_normOfDLSRErrors(s_timeInd,s_bandInd)=m_normOfDLSRErrors(s_timeInd,s_bandInd)+...
+                                norm(t_distrEstimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                                ,s_mtind,s_sampleInd,s_bandInd)...
+                                -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                            m_normOfLMSErrors(s_timeInd,s_bandInd)=m_normOfLMSErrors(s_timeInd,s_bandInd)+...
+                                norm(t_lmsEstimate(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices...
+                                ,s_mtind,s_sampleInd,s_bandInd)...
+                                -m_graphFunction(v_notSampledPositions+(s_timeInd-1)*s_numberOfVertices,s_mtind),'fro');
+                        end
+                        
+                        s_bandwidth=v_bandwidthBL(s_bandInd);
+                        m_relativeErrorDistr(s_timeInd,(s_sampleInd-1)*size(v_bandwidthDLSR,2)+s_bandInd)=...
+                            sum(m_normOfDLSRErrors((1:s_timeInd),s_bandInd))/...
+                            s_summedNorm;%s_timeInd*s_numberOfVertices;
+                        m_relativeErrorLms(s_timeInd,(s_sampleInd-1)*size(v_bandwidthLMS,2)+s_bandInd)=...
+                            sum(m_normOfLMSErrors((1:s_timeInd),s_bandInd))/...
+                            s_summedNorm;
+                        m_relativeErrorbandLimitedEstimate(s_timeInd,(s_sampleInd-1)*size(v_bandwidthBL,2)+s_bandInd)...
+                            =sum(m_normOfBLErrors((1:s_timeInd),s_bandInd))/...
+                            s_summedNorm;%s_timeInd*s_numberOfVertices;
+                        myLegendBan{(s_sampleInd-1)*size(v_bandwidthBL,2)+s_bandInd}=...
+                            strcat('BL-IE, ',...
+                            sprintf(' B=%g',s_bandwidth));
+                        s_bandwidth=v_bandwidthDLSR(s_bandInd);
+                        myLegendDLSR{(s_sampleInd-1)*size(v_bandwidthDLSR,2)+s_bandInd}=strcat('DLSR',...
+                            sprintf(' B=%g',s_bandwidth));
+                        s_bandwidth=v_bandwidthLMS(s_bandInd);
+                        myLegendLMS{(s_sampleInd-1)*size(v_bandwidthLMS,2)+s_bandInd}=strcat('LMS',...
+                            sprintf(' B=%g',s_bandwidth));
+                        
+                    end
+                    myLegendKRR{s_sampleInd}='KRR-IE';
+                    myLegendKrKF{s_sampleInd}='KrKKF';
+                    
+                end
+            end
+            %normalize errors
+            
+            myLegend=[myLegendDLSR myLegendLMS myLegendBan myLegendKRR myLegendKrKF ];
+            %myLegend=[myLegendKRR myLegendKrKF ];
+
+            F = F_figure('X',(1:s_maximumTime),'Y',[m_relativeErrorDistr...
+                ,m_relativeErrorLms,m_relativeErrorbandLimitedEstimate...
+                , m_relativeErrorKRR,m_relativeErrorKrKF]',...
+                'xlab','Time evolution','ylab','NMSE','leg',myLegend);
+%             F = F_figure('X',(1:s_maximumTime),'Y',[m_relativeErrorKRR,m_relativeErrorKrKF]',...
+%                 'xlab','Time evolution','ylab','NMSE','leg',myLegend);
+            F.ylimit=[0 1];
+            F.caption=[	sprintf('regularization parameter mu=%g\n',s_mu),...
+                sprintf(' diffusion parameter sigma=%g\n',s_sigmaForDiffusion)...
                 sprintf('mu for DLSR =%g\n',s_muDLSR)...
                 sprintf('beta for DLSR =%g\n',s_betaDLSR)...
                 sprintf('step LMS =%g\n',s_stepLMS)...
@@ -4702,8 +5131,8 @@ classdef KrKFonGSimulations < simFunctionSet
             s_pctOfTrainPhase=0.2;
             s_transWeight=0.4;
             %Multikernel
-            v_sigmaForDiffusion=[2.1,0.7,0.8,1,1.1,1.2,1.3,1.5,1.8,1.9,2,2.2,10];
-            s_numberOfKernels=size(v_sigmaForDiffusion,2);
+            v_sigmaParDiffusion=[2.1,0.7,0.8,1,1.1,1.2,1.3,1.5,1.8,1.9,2,2.2,10];
+            s_numberOfKernels=size(v_sigmaParDiffusion,2);
             s_lambdaForMultiKernels=1;
             %v_bandwidthPercentage=0.01;
             %v_sigma=ones(s_maximumTime,1)* sqrt((s_maximumTime)*v_numberOfSamples*s_mu)';
@@ -4801,7 +5230,7 @@ classdef KrKFonGSimulations < simFunctionSet
             m_combinedKernel=m_diffusionKernel; % the combined kernel for kriging
             t_dictionaryOfKernels=zeros(s_numberOfKernels,s_numberOfVertices,s_numberOfVertices);
             for s_kernelInd=1:s_numberOfKernels
-                diffusionGraphKernel=DiffusionGraphKernel('s_sigma',v_sigmaForDiffusion(s_kernelInd),'m_laplacian',graph.getLaplacian);
+                diffusionGraphKernel=DiffusionGraphKernel('s_sigma',v_sigmaParDiffusion(s_kernelInd),'m_laplacian',graph.getLaplacian);
                 m_difker=diffusionGraphKernel.generateKernelMatrix;
                 t_dictionaryOfKernels(s_kernelInd,:,:)=m_difker;
             end
@@ -6586,6 +7015,18 @@ classdef KrKFonGSimulations < simFunctionSet
         
     end
     methods(Static)
+        %% generate transformed eigenvalues
+        function [m_eigenvectors,m_eigenvaluesAll]=transformedDifEigValues(m_laplacian,v_sigmaForDiffusion)
+            [m_eigenvectors,m_eigenvalues] = eig(m_laplacian);%,size(obj.m_laplacian,1));
+            v_eigenvalues=diag(m_eigenvalues);
+            v_eigenvalues(v_eigenvalues == 0) = eps;
+            m_eigenvaluesAll=zeros(size(m_laplacian,1),size(v_sigmaForDiffusion,2));
+            for s_ind=1:size(v_sigmaForDiffusion,2);
+                m_eigenvaluesAll(:,s_ind)=1./(exp(v_sigmaForDiffusion(s_ind)^2*v_eigenvalues/2));
+            end
+                
+        end
+        
         %% calculate residual covariance
         function t_residualCov=calculateResidualCov(t_residual,s_numberOfSamples,s_monteCarloSimulations,s_trainTimePeriod)
             t_auxCovForSignal=zeros(s_numberOfSamples,s_numberOfSamples,s_monteCarloSimulations);

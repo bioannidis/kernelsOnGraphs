@@ -41,6 +41,22 @@ classdef BatchEmpiricalMeanCovEstimator < EmpiricalMeanCovarianceEstimator
             end
             t_functionCov=t_auxCovForSignal;
         end
+        %calculates the empirical correlation of a function in batch form
+        function t_functionCor=calculateResidualCorBatch(obj,t_functionEstimates,s_numberOfVertices,s_monteCarloSimulations,s_timeWindow)
+            %t_functionEstimates is a s_numberOfVerticesxs_monteCarloSimulationsxs_trainTimePeriod
+            %                   tensor containing the functions that their cov
+            %                   will be estimated
+            
+            t_auxCorForSignal=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
+            for s_realizationCounter=1:s_monteCarloSimulations
+                m_residual=squeeze(t_functionEstimates(:,s_monteCarloSimulations,:));
+                %regularized correlation mat
+                t_auxCorForSignal(:,:,s_realizationCounter)=(1/s_timeWindow)*...
+                    (m_residual)*(m_residual)'+(1/s_timeWindow)*eye(s_numberOfVertices);
+            end
+            t_functionCor=t_auxCorForSignal;
+        end
+        
         %calculates the empirical mean of a function in batch form
         function m_functionMean=calculateResidualMeanBatch(obj,t_functionEstimates,s_numberOfSamples,s_monteCarloSimulations)
             m_auxMeanForSignal=zeros(s_numberOfSamples,s_monteCarloSimulations);
