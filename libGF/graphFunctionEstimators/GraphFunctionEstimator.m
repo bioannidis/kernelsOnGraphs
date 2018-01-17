@@ -105,7 +105,7 @@ classdef GraphFunctionEstimator < Parameter
 		%          
 		% 
 		
-		N = getNumOfVertices(obj);
+		%N = getNumOfVertices(obj);
         % return the number of vertices of the graph that this estimator is 
         %        trying to operate on. Since this base class has no idea what 
         %        the graphs are likely to be estimated by descendants class

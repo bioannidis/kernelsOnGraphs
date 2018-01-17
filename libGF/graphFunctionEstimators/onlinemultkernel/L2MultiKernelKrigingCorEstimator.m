@@ -42,24 +42,33 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                 else
                     m_correlations=t_correlations;
                 end
-              
+                s_lam=obj.s_lambda;
+                %s_lam*sum_square(v_theta)
                 m_linearComb=zeros(size(m_correlations));
                 m_sqrtcorr=sqrtm(m_correlations);
                 s_numberOfVertices=size(m_correlations,1);
-                m_eye=eye(s_numberOfVertices);
-                 cvx_begin
+                v_theta=ones(s_numberOfKernels);
+                
+%                 t1=trace(m_sqrtcorr*inv(v_theta(1)*squeeze(obj.t_kernelDictionary(1,:,:))...
+%                     +v_theta(2)*squeeze(obj.t_kernelDictionary(2,:,:)))*m_sqrtcorr)+1*norm(v_theta)^2;
+
+                cvx_begin
 				cvx_solver sedumi
                 variables v_theta(1,s_numberOfKernels) t 
-                minimize t+obj.s_lambda*sum_square(v_theta)
+                minimize t +s_lam*sum_square(v_theta)
                 subject to
+                %sum_square(v_theta)<=1/s_lam
                 v_theta>=0;
+                %v_theta(1)>=0.1;
+                t>=0;
                 m_linearComb=0;               
                 for s_kernelInd=1:s_numberOfKernels
                     m_linearComb=m_linearComb+squeeze(v_theta(s_kernelInd)*obj.t_kernelDictionary(s_kernelInd,:,:));
                 end
+               
                 [m_linearComb m_sqrtcorr;...
-                    m_sqrtcorr' t*eye(s_numberOfVertices)]>=0;
-                sum(v_theta)==1;
+                    m_sqrtcorr' (t/s_numberOfVertices)*eye(s_numberOfVertices)]>=0;
+                %sum(v_theta)==1;
                 cvx_end 
                 %m_theta(:,s_monteCarloInd)=m_C\v_a;
                 m_theta(:,s_monteCarloInd)=v_theta';
@@ -90,20 +99,22 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                 m_transformedCorrelations=t_transformedCorrelations(:,:,s_monteCarloInd);
                 v_thetap=zeros(s_numberOfKernels,1);
                 v_theta=ones(s_numberOfKernels,1);
-                s_sens=10^-6;
+                s_sens=10^-8;
                 s_stepSize=0.1;
                 s_it=1;
+                
                 while norm(v_thetap-v_theta)>s_sens
                     v_grad=obj.evaluateGrad(m_transformedCorrelations,m_eigenvalues,v_theta);
                     v_thetap=v_theta;
                     s_stepSize=obj.armijoStepSizeRuleM(m_transformedCorrelations,m_eigenvalues,v_theta);
                     v_theta=pos(v_theta-s_stepSize*v_grad);
-                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta)
-                    s_dif=norm(v_thetap-v_theta)
+                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta);
+                    s_dif=norm(v_thetap-v_theta);
                     s_it=s_it+1;
                     if s_it==1000
                     end
                 end
+                s_it
                  m_theta(:,s_monteCarloInd)=v_theta';
                 
             end
@@ -122,6 +133,7 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
             
             m_theta=zeros(size(obj.t_kernelDictionary,1),size(t_transformedCorrelations,3));
             s_numberOfKernels=size(obj.t_kernelDictionary,1);
+            tic
             for s_monteCarloInd=1:size(t_transformedCorrelations,3)
                 m_transformedCorrelations=t_transformedCorrelations(:,:,s_monteCarloInd);
                 v_thetap=zeros(s_numberOfKernels,1);
@@ -129,21 +141,73 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                 s_sens=10^-6;
                 s_stepSize=1;
                 s_it=1;
+                m_thetaIter=zeros(s_numberOfKernels);
+                s_recalchesperiod=10;
                 while norm(v_thetap-v_theta)>s_sens
                     v_grad=obj.evaluateGrad(m_transformedCorrelations,m_eigenvalues,v_theta);
                     v_thetap=v_theta;
-                    m_hes=obj.evaluateHes(m_transformedCorrelations,m_eigenvalues,v_theta);
-                    v_theta=pos(v_theta-s_stepSize*(m_hes)\v_grad);
-                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta)
-                    s_dif=norm(v_thetap-v_theta)
+                    if mod(s_it,s_recalchesperiod)==0||s_it==1;
+                        m_hes=obj.evaluateHes(m_transformedCorrelations,m_eigenvalues,v_theta);
+                        m_invhes=inv(m_hes);
+                    end
+                    v_theta=pos(v_theta-s_stepSize*m_invhes*v_grad);
+                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta);
+                    s_dif=norm(v_thetap-v_theta);
+                     m_thetaIter(:,s_it)=v_theta';
                     s_it=s_it+1;
                     if s_it==1000
                     end
                 end
-                 m_theta(:,s_monteCarloInd)=v_theta';
+                %obj.plotOrigObj(m_thetaIter,m_transformedCorrelations,m_eigenvalues)
+                m_theta(:,s_monteCarloInd)=v_theta';
                 
             end
+            gd=toc
             
+            
+            %different thetas how to handle that?
+            
+            v_theta=mean(m_theta,2);
+            v_theta(v_theta < 0) = 0;
+          end
+          
+          function v_theta=estimateCoeffVectorNewtonWithInit(obj,t_transformedCorrelations,m_eigenvalues,v_thetaInit)
+           %% this function estimates the vectors of coefficients for the kernels
+            % The minimization of pbj for kernel matching in the paper
+            % t_correlations is an s_monteCarlo x N x N tensor 
+            
+            m_theta=zeros(size(obj.t_kernelDictionary,1),size(t_transformedCorrelations,3));
+            s_numberOfKernels=size(obj.t_kernelDictionary,1);
+            tic
+            for s_monteCarloInd=1:size(t_transformedCorrelations,3)
+                m_transformedCorrelations=t_transformedCorrelations(:,:,s_monteCarloInd);
+                v_thetap=zeros(s_numberOfKernels,1);
+                v_theta=v_thetaInit;
+                s_sens=10^-6;
+                s_stepSize=1;
+                s_it=1;
+                m_thetaIter=zeros(s_numberOfKernels);
+                s_recalchesperiod=10;
+                while norm(v_thetap-v_theta)>s_sens
+                    v_grad=obj.evaluateGrad(m_transformedCorrelations,m_eigenvalues,v_theta);
+                    v_thetap=v_theta;
+                    if mod(s_it,s_recalchesperiod)==0||s_it==1;
+                        m_hes=obj.evaluateHes(m_transformedCorrelations,m_eigenvalues,v_theta);
+                        m_invhes=inv(m_hes);
+                    end
+                    v_theta=pos(v_theta-s_stepSize*m_invhes*v_grad);
+                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta);
+                    s_dif=norm(v_thetap-v_theta);
+                     m_thetaIter(:,s_it)=v_theta';
+                    s_it=s_it+1;
+                    if s_it==1000
+                    end
+                end
+                %obj.plotOrigObj(m_thetaIter,m_transformedCorrelations,m_eigenvalues)
+                m_theta(:,s_monteCarloInd)=v_theta';
+                
+            end
+            gd=toc
             
             
             %different thetas how to handle that?
@@ -164,7 +228,7 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                 v_thetap=zeros(s_numberOfKernels,1);
                 v_theta=ones(s_numberOfKernels,1);
                 s_sens=10^-6;
-                s_stepSize=1;
+                s_stepSize=0.0001;
                 s_it=1;
                 while norm(v_thetap-v_theta)>s_sens
                     v_grad=obj.evaluateGrad(m_transformedCorrelations,m_eigenvalues,v_theta);
@@ -173,11 +237,13 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                     v_theta=pos(v_theta-s_stepSize*(m_hes)\v_grad);
                     s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta)
                     s_dif=norm(v_thetap-v_theta)
+                   
+
                     s_it=s_it+1;
                     if s_it==1000
                     end
                 end
-                 m_theta(:,s_monteCarloInd)=v_theta';
+                m_theta(:,s_monteCarloInd)=v_theta';
                 
             end
             
@@ -208,13 +274,16 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
                     v_thetap=v_theta;
                     s_stepSize=obj.armijoStepSizeRuleM(m_transformedCorrelations,m_eigenvalues,v_theta);
                     v_theta=pos(v_theta-s_stepSize*v_grad);
-                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta)
-                    s_dif=norm(v_thetap-v_theta)
-                    s_it=s_it+1;
+                    s_val=obj.evaluateObj(m_transformedCorrelations,m_eigenvalues,v_theta);
+                    s_dif=norm(v_thetap-v_theta);
+                    
                     if s_it==1000
                     end
+                    s_it=s_it+1;
                 end
+                %s_it
                  m_theta(:,s_monteCarloInd)=v_theta';
+                 
                 
             end
             
@@ -282,7 +351,20 @@ classdef L2MultiKernelKrigingCorEstimator < MultiKernelKrigingCovEstimator
             s_val= trace(diag(v_inveigenvalues)*m_transformedCorrelations)+obj.s_lambda*(norm(v_theta)^2);
           end
         
-         
+          function plotOrigObj(obj,m_thetaIter,m_transformedCor,m_eigenvalues)
+              v_val=zeros(size(m_thetaIter,2),1);
+              v_val2=zeros(size(m_thetaIter,2),1);
+              for s_it=1:size(m_thetaIter,2)
+                  m_linearComb=0;               
+                for s_kernelInd=1:size(m_thetaIter,1)
+                    m_linearComb=m_linearComb+squeeze(m_thetaIter(s_kernelInd,s_it)*obj.t_kernelDictionary(s_kernelInd,:,:));
+                end
+                v_val2(s_it)=obj.evaluateObj(m_transformedCor,m_eigenvalues,m_thetaIter(:,s_it));
+                v_val(s_it)=trace(inv(m_linearComb)*m_transformedCor)+obj.s_lambda*norm(m_thetaIter(:,s_it))^2;
+              end
+              plot(v_val);
+              plot(v_val2);
+          end
         
         
         function m_kernel = getNewKernelMatrix(obj,graph)

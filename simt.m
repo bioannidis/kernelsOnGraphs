@@ -22,20 +22,20 @@ plot_f_settings.pdf_flag=1;   % write figures to pdf
 plot_f_settings.bw_maxpoints=20; 
 plot_f_settings.figbasename='';  % if ~='' then figures are stored in the specified location,
                                  % else, the default folder is used. It must end with '/'.
-%plot_f_settings.pos=[100.0000  402.0000  0.75*[592.3077  363.4615]]; % good for papers
-plot_f_settings.pos=[[100.0000  402.0000]  1.5*[592.3077  363.4615]];
+plot_f_settings.pos=[100.0000  402.0000  0.75*[592.3077  363.4615]]; % good for papers
+%plot_f_settings.pos=[[100.0000  402.0000]  [592.3077  363.4615]];
 global chars_per_line
 chars_per_line = 80;
 
 
 % Execution options (EDIT)
-defaultFigureIndex = 25192;
-niter =1;
+defaultFigureIndex = 1006;
+niter = 1;
 %fs = MultikernelSimulations;
 %fs = SemiParametricSimulations;
 %fs = KFonGSimulations;
 fs = KrKFonGSimulations;
-
+%fs = BlindTopologySignalIDTVSimulations;
 % EXECUTION
 if nargin < 2
 	simt_compute(fs,defaultFigureIndex,niter,onlyplot)

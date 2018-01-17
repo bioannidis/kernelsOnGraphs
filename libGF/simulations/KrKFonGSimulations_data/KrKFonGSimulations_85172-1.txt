@@ -1,0 +1,13 @@
+regularization parameter mu=1e-07
+ diffusion parameter sigma=2.5
+s_stateSigma =5e-06
+s_transWeight =1e-06
+mu for DLSR =1.2
+beta for DLSR =0.4
+step LMS =1.5
+sampling size =0.5
+sampling size =0.6
+sampling size =0.7
+sampling size =0.8
+sampling size =0.9
+sampling size =1

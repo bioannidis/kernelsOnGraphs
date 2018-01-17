@@ -22,7 +22,8 @@ classdef KrigedKFonGFunctionEstimator< GraphFunctionEstimator
 		
 		t_previousMinimumSquaredError; %NxNxS_NUMBEROFREALIZATIONS  tensor corresponding to the MSE
 		%of the previous iteration
-		
+		s_mu1=1;
+        s_mu2=1;
 		m_previousEstimate;            %NxS_NUMBEROFREALIZATIONS
 		%matrix corresponding to the previous
 		%estimates S_NUMBEROFREALIZATIONS
@@ -42,14 +43,14 @@ classdef KrigedKFonGFunctionEstimator< GraphFunctionEstimator
 	end
 	
 	methods
-		function [m_estimateKr,m_estimateKF,t_newMSEKF]=estimate(obj,m_samples,m_positions,m_transitions,m_stateEvolutionKernel,m_spatialCovariance,t_obsNoiseCovariace)
-			
-            [m_estimateKF,t_newMSEKF] =oneStepKF(obj,m_samples,m_positions,m_transitions,m_stateEvolutionKernel,m_spatialCovariance,t_obsNoiseCovariace);
+		function [m_estimateKr,m_estimateKF,t_newMSEKF]=estimate(obj,m_samples,m_positions,m_transitions,m_stateEvolutionKernel,m_spatialCovariance,m_obsNoiseCovariace)
+			m_obsNoiseCovariace=size(m_obsNoiseCovariace,1)*m_obsNoiseCovariace;
+            [m_estimateKF,t_newMSEKF] =oneStepKF(obj,m_samples,m_positions,m_transitions,m_stateEvolutionKernel,m_spatialCovariance,m_obsNoiseCovariace);
             
-			 m_estimateKr=kriging(obj,m_samples,m_positions,m_estimateKF,t_obsNoiseCovariace,m_spatialCovariance);
+			 m_estimateKr=kriging(obj,m_samples,m_positions,m_estimateKF,m_obsNoiseCovariace,m_spatialCovariance);
         end
     
-		function [m_estimate,t_newMSE] = oneStepKF(obj,m_samples,m_positions,m_transitions,m_stateEvolutionKernel,m_spatialCovariance,m_noiseCovariace)
+		function [m_estimate,t_newMSE] = oneStepKF(obj,m_samples,m_positions,m_transitions,m_stateNoiseKernel,m_spatialKernel,m_noiseCovariace)
 			%
 			% Input:
 			% M_SAMPLES                 S_t x S_NUMBEROFREALIZATIONS  matrix with
@@ -84,13 +85,14 @@ classdef KrigedKFonGFunctionEstimator< GraphFunctionEstimator
 				for s_ind=1:size(m_positions,1)
 					m_phi(s_ind,m_positions(s_ind,s_realizationCounter))=1;
                 end
-                m_spatioTempCov=m_phi*m_spatialCovariance*m_phi'...
+                m_spatioTempCov=(1/obj.s_mu2)*m_phi*m_spatialKernel*m_phi'...
                     +m_noiseCovariace;
 				%CHECK m_phi
 				%Prediction
+                
 				v_prediction=m_transitions*m_previousEstimate(:,s_realizationCounter);
 				%Mimumum Prediction MSE Matrix
-				m_minPredMinimumMSE=m_transitions*t_previousMinimumSquaredError(:,:,s_realizationCounter)*m_transitions' +m_stateEvolutionKernel;
+				m_minPredMinimumMSE=m_transitions*t_previousMinimumSquaredError(:,:,s_realizationCounter)*m_transitions' +(1/obj.s_mu1)*m_stateNoiseKernel;
 				%Kalman Gain Matrix
 				m_kalmanGain=m_minPredMinimumMSE*m_phi'/(m_spatioTempCov+m_phi*m_minPredMinimumMSE*m_phi');
 				%Correction
@@ -107,7 +109,7 @@ classdef KrigedKFonGFunctionEstimator< GraphFunctionEstimator
         
         
         
-        function [m_estimate] =kriging(obj,m_samples,m_positions,m_spatiotemporalComponent,m_noiseCovariace,m_spatialCovariance)
+        function [m_estimate] =kriging(obj,m_samples,m_positions,m_spatiotemporalComponent,m_noiseCovariace,m_spatioKernel)
 			%
 			% Input:
 			% M_SAMPLES                 S_t x S_NUMBEROFREALIZATIONS  matrix with
@@ -146,8 +148,8 @@ classdef KrigedKFonGFunctionEstimator< GraphFunctionEstimator
 				for s_ind=1:size(m_positions,1)
 					m_phi(s_ind,m_positions(s_ind,s_realizationCounter))=1;
                 end
-                m_estimate(:,s_realizationCounter)=(m_spatialCovariance*m_phi'...
-                    /(m_phi*m_spatialCovariance*m_phi'+m_noiseCovariace))*...
+                m_estimate(:,s_realizationCounter)=(m_spatioKernel*m_phi'...
+                    /((1/obj.s_mu2)*m_phi*m_spatioKernel*m_phi'+m_noiseCovariace))*...
                     (m_samples(:,s_realizationCounter)-m_phi*m_spatiotemporalComponent(:,s_realizationCounter));
 			end
 			

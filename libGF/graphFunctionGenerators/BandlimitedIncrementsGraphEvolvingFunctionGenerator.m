@@ -1,4 +1,4 @@
-classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGenerator
+classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < EvolvingGraphFunctionGenerator
 	
 	
 	properties % Required by superclass Parameter
@@ -19,14 +19,14 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 		
 		b_generateSameFunction = 0; % generate the same function if set to 1
 		s_mean = 0;
-		s_weightDecay;
+        m_transitions;
 	end
 	
 	methods
 		
 		function obj = BandlimitedIncrementsGraphEvolvingFunctionGenerator(varargin)
 			% constructor
-			obj@GraphFunctionGenerator(varargin{:});
+			obj@EvolvingGraphFunctionGenerator(varargin{:});
 		end
 		
 		
@@ -38,9 +38,8 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 			%                   the first OBJ.s_bandwidth entries and zero
 			%                   for the remaining ones
 			
-			assert(~isempty(obj.graph));
 			assert(~isempty(obj.v_bandwidth));
-			s_numberOfVertices=obj.graph.getNumberOfVertices()/obj.s_maximumTime;
+			s_numberOfVertices=size(obj.t_adjacency,2);
 			if nargin < 2
 				s_numberOfRealizations = 1;
 			end
@@ -54,7 +53,7 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
             if(size(obj.v_bandwidth,1)==1)
 				for s_time=1:obj.s_maximumTime
 					s_bandwidth=obj.v_bandwidth(1);
-					m_B = obj.basis(s_bandwidth,s_time,s_numberOfVertices);
+					m_B = obj.basis(s_bandwidth,s_time);
 					%freq = randn(obj.s_bandwidth,s_numberOfRealizations);
 					if obj.b_sortedSpectrum %not supported
 						%[~, ind] = sort(abs(freq), 'descend');
@@ -71,7 +70,7 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 								else
 										m_graphFunction(s_numberOfVertices*(s_time-1)+1:...
                                             s_numberOfVertices*s_time,:)...
-									=obj.s_weightDecay*m_graphFunction(s_numberOfVertices*(s_time-2)+1:...
+									=obj.m_transitions*m_graphFunction(s_numberOfVertices*(s_time-2)+1:...
                                     s_numberOfVertices*(s_time-1),:)+...
 									randn*sqrt(size(m_B,1)/obj.v_bandwidth) * ...
 									m_B*(randn(obj.v_bandwidth,s_numberOfRealizations));
@@ -83,7 +82,7 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 									m_B*(rand(obj.v_bandwidth,s_numberOfRealizations));
 								else
 										m_graphFunction(s_numberOfVertices*(s_time-1)+1:s_numberOfVertices*s_time,:)...
-									=obj.s_weightDecay*m_graphFunction(s_numberOfVertices*(s_time-2)+1:...
+									=obj.m_transitions*m_graphFunction(s_numberOfVertices*(s_time-2)+1:...
                                     s_numberOfVertices*(s_time-1),:)+...
 									rand*sqrt(size(m_B,1)/obj.v_bandwidth) * ...
 									m_B*(rand(obj.v_bandwidth,s_numberOfRealizations));
@@ -106,7 +105,7 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 			end
 		end
 		
-		function m_basis = basis(obj,s_otherBandwidth,s_time,s_numberOfVertices)
+		function m_basis = basis(obj,s_otherBandwidth,s_time)
 			%  M_BASIS            N x S_OTHERBANDWIDTH matrix containing the
 			%                     first OBJ.s_bandwidth eigenvectors of the
 			%                     Laplacian
@@ -117,8 +116,7 @@ classdef BandlimitedIncrementsGraphEvolvingFunctionGenerator  < GraphFunctionGen
 			if nargin<2 % default option
 				s_otherBandwidth = obj.v_bandwidth;
 			end
-			m_adjacency = obj.graph.m_adjacency((s_time-1)*s_numberOfVertices+1:(s_time)*s_numberOfVertices,...
-				(s_time-1)*s_numberOfVertices+1:(s_time)*s_numberOfVertices);
+			m_adjacency = obj.t_adjacency(:,:,s_time);
 			v_degrees = sum(m_adjacency,2);
 			m_L = diag(v_degrees) - m_adjacency;
 			[m_V,~,~] = eig(m_L);

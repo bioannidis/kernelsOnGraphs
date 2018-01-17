@@ -1,0 +1,6 @@
+regularization parameter mu=1e-07
+ diffusion parameter sigma=0.3
+s_stateSigma =0.0001
+s_transWeight =0.001
+s_forgetingFactor=0.01
+sampling size =0.8

@@ -163,9 +163,9 @@ classdef Graph
 			v_f_tilde_normalized = obj.getNormalizedLaplacianEigenvectors'*v_f;
 			
 			subplot(2,1,1)
-			plot(abs(v_f_tilde_unnormalized)); title('Unnormalized Laplacian')
+			stem(abs(v_f_tilde_unnormalized)); title('Unnormalized Laplacian')
 			subplot(2,1,2)
-			plot(abs(v_f_tilde_normalized)); title('normalized Laplacian')
+			stem(abs(v_f_tilde_normalized)); title('normalized Laplacian')
 
 %             plot(abs([v_f_tilde_unnormalized v_f_tilde_normalized]));
 % 			legend('unnormalized','normalized');

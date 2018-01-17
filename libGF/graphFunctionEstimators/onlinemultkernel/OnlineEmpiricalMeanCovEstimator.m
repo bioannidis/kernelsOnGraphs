@@ -11,7 +11,7 @@ classdef OnlineEmpiricalMeanCovEstimator < EmpiricalMeanCovarianceEstimator
     
     properties
         ch_name = 'onlineEmpiricalCovEstimator';
-        s_stepSize; %for nonstationary covariances
+        s_stepSize=0; %for nonstationary covariances
     end
     
     methods
@@ -42,6 +42,18 @@ classdef OnlineEmpiricalMeanCovEstimator < EmpiricalMeanCovarianceEstimator
         end
 
         
-
+         function [t_functionCor]=incrementalCalcResCor...
+                (obj,t_functionCor,m_function,s_timeInd)
+            if obj.s_stepSize==0
+                s_stepSiz=s_timeInd/(s_timeInd+1);
+            else
+                s_stepSiz=obj.s_stepSize;
+            end
+            for s_realizationCounter=1:size(t_functionCor,3)
+                t_functionCor(:,:,s_realizationCounter)=s_stepSiz*t_functionCor(:,:,s_realizationCounter)+...
+                    +...(1-s_stepSiz)*...
+                    m_function(:,s_realizationCounter)*m_function(:,s_realizationCounter)';
+            end
+        end
     end
 end

@@ -19,6 +19,8 @@ classdef DistributedFullTrackingAlgorithmEstimator< GraphFunctionEstimator
         % space
         s_bandwidth    % bandwidth of signal considered
         graph;         %graph object containing the adjacency
+        s_mu=1.2;
+        s_beta=0.5;
     end
     
     
@@ -51,8 +53,8 @@ classdef DistributedFullTrackingAlgorithmEstimator< GraphFunctionEstimator
                 'm_distancesBetweenVertices',m_distancesBetweenVertices,...
                 't_errorsOnSampled',t_errorsOnSampled,...
                 'm_previousEstimate',m_previousEstimate);
-            s_mu=1.2;
-            s_beta=0.5;
+            s_mu=obj.s_mu;
+            s_beta=obj.s_beta;
             for s_timeInd=1:obj.s_maximumTime
                 %time t indices
                 v_timetIndicesForSignals=(s_timeInd-1)*s_numberOfVertices+1:...

@@ -50,9 +50,19 @@ classdef BatchEmpiricalMeanCovEstimator < EmpiricalMeanCovarianceEstimator
             t_auxCorForSignal=zeros(s_numberOfVertices,s_numberOfVertices,s_monteCarloSimulations);
             for s_realizationCounter=1:s_monteCarloSimulations
                 m_residual=squeeze(t_functionEstimates(:,s_monteCarloSimulations,:));
+                m_cormat=zeros(size(m_residual,1));
+                for s_ind1=1:size(m_residual,2);
+                    m_cormat=m_cormat+m_residual(:,s_ind1)*m_residual(:,s_ind1)';
+                end
+                m_cormat=(1/s_timeWindow)*...
+                    (m_cormat+eye(s_numberOfVertices));
                 %regularized correlation mat
-                t_auxCorForSignal(:,:,s_realizationCounter)=(1/s_timeWindow)*...
-                    (m_residual)*(m_residual)'+(1/s_timeWindow)*eye(s_numberOfVertices);
+%                 m_cormat1=(1/s_timeWindow)*...
+%                 (...
+%                     (m_residual)*(m_residual)'+...
+%                     eye(s_numberOfVertices));
+                %[d,v]=eig(m_cormat);
+                t_auxCorForSignal(:,:,s_realizationCounter)=m_cormat;
             end
             t_functionCor=t_auxCorForSignal;
         end

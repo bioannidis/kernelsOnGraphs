@@ -1865,10 +1865,13 @@ classdef SemiParametricSimulations < simFunctionSet
 			F.ylimit=[0 1];
 			F.xlimit=[10 98];
             F.logy=1;
-                    
+              
             F.Y(5,:)=[];
+            
             F.leg{1,5}= F.leg{1,6};
-        
+            F.leg{1}='BL B=5';
+            F.leg{2}='BL B=10';
+            F.leg=F.leg(1:5);
 			F.styles = {'-o','-x','-^','--o','--^','--*'};
             F.colorset=[0 0 0;0 .7 0;.5 .5 0; .9 0 .9 ; 1 0 0;   1 0 .5; 0 1 .5;0 1 0];
 

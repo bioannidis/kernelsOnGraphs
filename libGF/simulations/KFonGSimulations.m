@@ -10492,7 +10492,7 @@ classdef KFonGSimulations < simFunctionSet
             %loads [m_adjacency,m_temperatureTimeSeries]
             % the adjacency between the cities and the relevant time
             % series.
-            [m_adjacency,m_timeAdjacency,t_brainSignalTimeSeries] = readBrainSignalTimeEvolvingDataset;
+            [m_adjacency,~,t_brainSignalTimeSeries] = readBrainSignalTimeEvolvingDataset;
             % take only the first brain signal to test of the pre period..
             % smoother...
             

@@ -345,6 +345,7 @@ classdef F_figure
 				case 'imagesc'
 					pcolor(F.X,F.Y,F.Z);
 					colormap(gcf,jet(100));
+                    colorbar;
 				case 'surf'
 					surf(F.X,F.Y,F.Z);					
 				case 'plot3'

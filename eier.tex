@@ -1,0 +1,57 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=\mywidth,
+height=0.987\myheight,
+at={(0\mywidth,0\myheight)},
+scale only axis,
+xmin=45,
+xmax=80,
+xlabel style={font=\color{white!15!black}},
+xlabel={sample size (M)},
+ymin=3.9,
+ymax=4.1,
+ylabel style={font=\color{white!15!black}},
+ylabel={EIER},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+grid style={dashed},
+legend style={legend cell align=left, align=left, draw=white!15!black}
+]
+\addplot [color=black, line width=2.0pt]
+  table[row sep=crcr]{%
+48	3.91170886075949\\
+52	3.91170886075949\\
+56	3.91170886075949\\
+60	3.91170886075949\\
+64	3.91170886075949\\
+68	3.91170886075949\\
+72	3.91170886075949\\
+76	3.91170886075949\\
+80	3.91170886075949\\
+};
+\addlegendentry{LSEM}
+
+\addplot [color=red, line width=2.0pt]
+  table[row sep=crcr]{%
+48	4.07721518987342\\
+52	4.03006329113924\\
+56	3.99936708860759\\
+60	3.95981012658228\\
+64	3.93575949367089\\
+68	3.9243670886076\\
+72	3.91803797468354\\
+76	3.91898734177215\\
+80	3.91360759493671\\
+};
+\addlegendentry{JISG}
+
+\end{axis}
+\end{tikzpicture}%

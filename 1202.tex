@@ -1,0 +1,101 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=\mywidth,
+height=0.987\myheight,
+at={(0\mywidth,0\myheight)},
+scale only axis,
+xmin=0,
+xmax=90,
+xlabel style={font=\color{white!15!black}},
+xlabel={Time[day]},
+ymin=0,
+ymax=1,
+ylabel style={font=\color{white!15!black}},
+ylabel={NMSE},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+grid style={dashed},
+legend style={legend cell align=left, align=left, draw=white!15!black}
+]
+\addplot [color=black, dashdotted, line width=2.0pt, mark=square, mark options={solid, black}]
+  table[row sep=crcr]{%
+1	0.352688264446344\\
+5	0.581506457087797\\
+10	0.461622715440472\\
+15	0.506254442734266\\
+20	0.535593891379517\\
+25	0.480546505535016\\
+30	0.507134783558574\\
+35	0.500280482668618\\
+40	0.506379737080819\\
+45	0.524153824779866\\
+50	0.523451024777895\\
+55	0.526368229042583\\
+60	0.51913336088023\\
+65	0.509583685715328\\
+70	0.508543627214675\\
+75	0.493995311799248\\
+80	0.496575155971922\\
+85	0.492602503426529\\
+90	0.490997832544577\\
+};
+\addlegendentry{KKr}
+
+\addplot [color=green, dashdotted, line width=2.0pt, mark=triangle, mark options={solid, green}]
+  table[row sep=crcr]{%
+1	0.808056733669833\\
+5	0.734305880470713\\
+10	0.721842627287895\\
+15	0.709023565293497\\
+20	0.710148440577542\\
+25	0.73320853432803\\
+30	0.721255634455733\\
+35	0.723909989179727\\
+40	0.72948898166981\\
+45	0.724937823519071\\
+50	0.725055805311469\\
+55	0.715345967355822\\
+60	0.715108263449574\\
+65	0.722179457662761\\
+70	0.721775576101659\\
+75	0.72400940004294\\
+80	0.727938497924767\\
+85	0.729403424737924\\
+90	0.731110379421293\\
+};
+\addlegendentry{KF}
+
+\addplot [color=red, dashdotted, line width=2.0pt, mark=o, mark options={solid, red}]
+  table[row sep=crcr]{%
+1	0.180602805025827\\
+5	0.31720798274398\\
+10	0.247661268943363\\
+15	0.270410524137266\\
+20	0.288057588324491\\
+25	0.2561982107883\\
+30	0.271018741642865\\
+35	0.267626814058028\\
+40	0.272124180261086\\
+45	0.283122474225174\\
+50	0.283073751265538\\
+55	0.286628704082715\\
+60	0.282714527990658\\
+65	0.278604492662643\\
+70	0.28003647531183\\
+75	0.272790536291441\\
+80	0.275761400722829\\
+85	0.274729671390907\\
+90	0.274511158503213\\
+};
+\addlegendentry{KKrKF}
+
+\end{axis}
+\end{tikzpicture}%

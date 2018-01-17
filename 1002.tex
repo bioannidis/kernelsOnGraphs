@@ -1,0 +1,121 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.90000,0.00000,0.90000}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=\mywidth,
+height=0.987\myheight,
+at={(0\mywidth,0\myheight)},
+scale only axis,
+xmin=30,
+xmax=90,
+xlabel style={font=\color{white!15!black}},
+xlabel={sample size (M)},
+ymin=0,
+ymax=1,
+ylabel style={font=\color{white!15!black}},
+ylabel={NMSE},
+axis background/.style={fill=white},
+xmajorgrids,
+ymajorgrids,
+grid style={dashed},
+legend style={legend cell align=left, align=left, draw=white!15!black}
+]
+\addplot [color=black, line width=2.0pt]
+  table[row sep=crcr]{%
+32.4	0.8361725866562\\
+36.45	0.743001212241367\\
+40.5	0.644251654572869\\
+44.55	0.601708677015815\\
+48.6	0.569364139631681\\
+52.65	0.54213346188062\\
+56.7	0.513674227988436\\
+60.75	0.495973590213404\\
+64.8	0.481864725656923\\
+68.85	0.46648286629369\\
+72.9	0.456810831258014\\
+76.95	0.447193968517847\\
+81	0.440011598885798\\
+};
+\addlegendentry{BL B=10}
+
+\addplot [color=red, line width=2.0pt]
+  table[row sep=crcr]{%
+32.4	0.806820310975578\\
+36.45	0.693590664266191\\
+40.5	0.608823884754147\\
+44.55	0.534059934405886\\
+48.6	0.496969368566317\\
+52.65	0.473297297598051\\
+56.7	0.449998191741861\\
+60.75	0.419033368862968\\
+64.8	0.40247651060411\\
+68.85	0.389555839808753\\
+72.9	0.376291304994612\\
+76.95	0.367370574344699\\
+81	0.35959482212027\\
+};
+\addlegendentry{BL B=12}
+
+\addplot [color=black!10!blue, line width=2.0pt]
+  table[row sep=crcr]{%
+32.4	0.441255290009367\\
+36.45	0.3866180979603\\
+40.5	0.335228288626668\\
+44.55	0.288247038341121\\
+48.6	0.239281913799075\\
+52.65	0.211849984018595\\
+56.7	0.179486891544339\\
+60.75	0.133251642557463\\
+64.8	0.111252504545579\\
+68.85	0.0762813426131256\\
+72.9	0.0485580407556622\\
+76.95	0.024933598270633\\
+81	3.54634930150347e-10\\
+};
+\addlegendentry{Multi-kernel}
+
+\addplot [color=black!35!green, line width=2.0pt]
+  table[row sep=crcr]{%
+32.4	0.340931525337675\\
+36.45	0.246159568585452\\
+40.5	0.173780574788684\\
+44.55	0.124210016233885\\
+48.6	0.096017150906751\\
+52.65	0.0816613453374974\\
+56.7	0.0625489862835427\\
+60.75	0.0459688029593075\\
+64.8	0.0368011599146576\\
+68.85	0.0257772595291641\\
+72.9	0.0143109249823898\\
+76.95	0.00717361126833929\\
+81	2.65418356471165e-09\\
+};
+\addlegendentry{LSEM}
+
+\addplot [color=mycolor1, line width=2.0pt]
+  table[row sep=crcr]{%
+32.4	0.243537679479807\\
+36.45	0.200758461807813\\
+40.5	0.157951497998955\\
+44.55	0.126066823753665\\
+48.6	0.094545826081417\\
+52.65	0.0812233101502989\\
+56.7	0.0620902940325737\\
+60.75	0.0412725807109759\\
+64.8	0.0329353420832904\\
+68.85	0.0211480752734846\\
+72.9	0.0109191534908444\\
+76.95	0.00573662259574595\\
+81	3.9023970142454e-09\\
+};
+\addlegendentry{Baseline}
+
+\end{axis}
+\end{tikzpicture}%

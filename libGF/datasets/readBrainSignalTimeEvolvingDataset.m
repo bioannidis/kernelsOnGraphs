@@ -69,14 +69,16 @@ m_spatialAdjacency(m_spatialAdjacency<0)=0;
 m_spatialAdjacency=m_spatialAdjacency+m_spatialAdjacency';
 
 m_timeAdjacency=m_timeAdjacency-diag(diag(m_timeAdjacency));
-m_timeAdjacency(m_timeAdjacency<0)=0;
 m_timeAdjacency=m_timeAdjacency+m_timeAdjacency';
-m_spatialAdjacency(m_spatialAdjacency>0)=1;
+%m_spatialAdjacency(m_spatialAdjacency>0)=1;
 m_timeAdjacency(m_timeAdjacency>0)=1;
 %m_spatialAdjacency=m_adjacency;
-% m_spatialAdjacency = partialcorr(t_brainSignalTimeSeries(:,:,9)');
-% m_spatialAdjacency=m_spatialAdjacency-diag(diag(m_spatialAdjacency));
-% m_spatialAdjacency(m_spatialAdjacency<0)=0;
+ m_spatialAdjacency = t_brainSignalTimeSeries(:,:,9)*t_brainSignalTimeSeries(:,:,9)';
+ m_spatialAdjacency=m_spatialAdjacency-diag(diag(m_spatialAdjacency));
+ m_spatialAdjacency=m_spatialAdjacency/max(max(m_spatialAdjacency));
+ m_spatialAdjacency(m_spatialAdjacency<0)=0;
+  m_spatialAdjacency(m_spatialAdjacency<10^-3)=0;
+ % m_spatialAdjacency(m_spatialAdjacency<0)=0;
 
 %file=strcat(folder,'m_spatialAdjacencywithpartialCorMethod.mat');
 %file=strcat(folder,'m_spatialAdjacencywithCovarianceAndYanningMethod.mat');
